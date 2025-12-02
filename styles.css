@@ -1,14 +1,44 @@
+/* ============================
+   GLOBAL DARK THEME
+   ============================ */
+
+:root {
+  --bg-main: #121212;             /* Deep dark background */
+  --bg-panel: #1e1e1e;            /* Panel background */
+  --bg-card: #1d1d1d;             /* Cards and lookup items */
+  --bg-hover: #2a2a2a;            /* Hover state */
+  --border-color: #333;           /* Soft borders */
+  --text-main: #e6e6e6;           /* Primary text */
+  --text-muted: #a1a1a1;          /* Muted text */
+  --accent: #4ea3ff;              /* Soft blue accent */
+  --accent-hover: #77bdff;        /* Accent hover */
+  --radius: 6px;
+}
+
 body {
   font-family: system-ui, sans-serif;
   margin: 0;
+  background: var(--bg-main);
+  color: var(--text-main);
 }
+
+/* ============================
+   HEADER & NAVIGATION
+   ============================ */
 
 header {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--bg-panel);
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+  color: var(--text-main);
 }
 
 nav {
@@ -17,17 +47,28 @@ nav {
 }
 
 .tab-button {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #f5f5f5;
-  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: 0.15s background;
+}
+
+.tab-button:hover {
+  background: var(--bg-hover);
 }
 
 .tab-button.active {
-  background: #fff;
-  border-bottom: 2px solid #0077cc;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
 }
+
+/* ============================
+   MAIN LAYOUT
+   ============================ */
 
 main {
   display: flex;
@@ -38,40 +79,173 @@ main {
 section {
   flex: 1;
   display: flex;
-  flex-direction: row;
 }
+
+/* ============================
+   SIDEBAR
+   ============================ */
 
 .sidebar {
-  width: 320px;
-  border-right: 1px solid #eee;
+  width: 330px;
+  border-right: 1px solid var(--border-color);
   padding: 0.75rem;
+  background: var(--bg-panel);
   overflow-y: auto;
 }
 
-.detail-panel {
-  flex: 1;
-  padding: 1rem;
-  overflow-y: auto;
-}
+/* ============================
+   TOOLBAR
+   ============================ */
 
 .toolbar {
   margin-bottom: 0.75rem;
 }
 
+input[type="search"] {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+input[type="search"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-hover);
+}
+
+/* ============================
+   ITEM CARDS (dataset/attribute)
+   ============================ */
+
 .dataset-card,
 .attribute-card {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  margin-bottom: 0.6rem;
   cursor: pointer;
+  transition: 0.15s background;
 }
 
 .dataset-card:hover,
 .attribute-card:hover {
-  background: #f7f7f7;
+  background: var(--bg-hover);
 }
 
+/* ============================
+   DETAIL PANEL
+   ============================ */
+
+.detail-panel {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--bg-main);
+}
+
+.detail-panel h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  color: var(--text-main);
+}
+
+.detail-panel h3 {
+  margin-top: 1.6rem;
+  font-size: 1.1rem;
+  color: var(--text-main);
+}
+
+.detail-panel ul {
+  padding-left: 1.1rem;
+  color: var(--text-muted);
+}
+
+.detail-panel li {
+  margin-bottom: 0.3rem;
+}
+
+/* ============================
+   LINKS
+   ============================ */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ============================
+   TABLES
+   ============================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+th, td {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+th {
+  background: var(--bg-panel);
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* ============================
+   BUTTONS
+   ============================ */
+
+button {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 0.95rem;
+}
+
+button:hover {
+  background: var(--bg-hover);
+}
+
+button:active {
+  background: var(--accent);
+  color: #000;
+}
+
+/* ============================
+   UTILITY
+   ============================ */
+
 .hidden {
-  display: none;
+  display: none !important;
+}
+
+code {
+  background: var(--bg-panel);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius);
+  color: var(--accent-hover);
 }
