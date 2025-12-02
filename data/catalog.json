@@ -1,4 +1,5 @@
-{
+[
+  {
   "id": "blm_rmp_boundaries",
   "title": "BLM Resource Management Plan Boundaries",
   "description": "Polygon boundaries of BLM Resource Management Plans.",
@@ -125,4 +126,8 @@
 
 
   
-}
+  }
+
+  
+]
+
