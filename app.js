@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   datasetsTab = document.getElementById('datasetsTab');
   attributesTab = document.getElementById('attributesTab');
 
-  // Defensive wiring – only attach listeners if elements exist
+  // Search + tab events
   if (datasetSearchInput) {
     datasetSearchInput.addEventListener('input', applyDatasetFilters);
   } else {
@@ -44,18 +44,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (datasetsTab) {
-    datasetsTab.addEventListener('click', () => switchView('datasets'));
+    datasetsTab.addEventListener('click', () => {
+      switchView('datasets');
+      // Clear hash when just switching tabs w/out specific item
+      updateHash('');
+    });
   } else {
     console.warn('datasetsTab element not found');
   }
 
   if (attributesTab) {
-    attributesTab.addEventListener('click', () => switchView('attributes'));
+    attributesTab.addEventListener('click', () => {
+      switchView('attributes');
+      updateHash('');
+    });
   } else {
     console.warn('attributesTab element not found');
   }
 
-  // Default to datasets view
+  // React to back/forward (hash changes)
+  window.addEventListener('hashchange', () => {
+    if (!catalog.length) return; // wait until data loaded
+    applyRouteFromHash();
+  });
+
+  // Default view until we know more
   switchView('datasets');
 
   loadCatalog();
@@ -93,6 +106,9 @@ async function loadCatalog() {
 
     renderDatasetList();
     renderAttributeList();
+
+    // Now that we have data, apply any incoming #dataset=... or #attribute=...
+    applyRouteFromHash();
   } catch (err) {
     console.error('Error loading catalog', err);
     if (datasetList) {
@@ -100,6 +116,64 @@ async function loadCatalog() {
     }
   }
 }
+
+/* ========== ROUTING / URL HANDLING ========== */
+
+function updateHash(hash) {
+  if (hash === '') {
+    // Clear hash
+    if (window.location.hash) {
+      history.pushState('', document.title, window.location.pathname + window.location.search);
+    }
+  } else {
+    const newHash = '#' + hash;
+    if (window.location.hash !== newHash) {
+      window.location.hash = newHash;
+    }
+  }
+}
+
+// Parse location.hash and drive UI
+function applyRouteFromHash() {
+  const rawHash = window.location.hash || '';
+  const hash = rawHash.startsWith('#') ? rawHash.slice(1) : rawHash;
+
+  if (!hash) {
+    console.log('No hash route, default datasets view');
+    switchView('datasets');
+    return;
+  }
+
+  const [key, value] = hash.split('=');
+  const decoded = decodeURIComponent(value || '');
+
+  if (key === 'dataset' && decoded) {
+    console.log('Routing to dataset from hash:', decoded);
+    switchView('datasets');
+    filteredDatasets = catalog;
+    renderDatasetList();
+    const d = catalog.find(ds => ds.id === decoded);
+    if (d) {
+      showDatasetDetail(d);
+    } else {
+      console.warn('Dataset not found for hash:', decoded);
+    }
+  } else if (key === 'attribute' && decoded) {
+    console.log('Routing to attribute from hash:', decoded);
+    switchView('attributes');
+    filteredAttributes = Object.values(attributeIndex);
+    renderAttributeList();
+    if (attributeIndex[decoded]) {
+      showAttributeDetail(decoded);
+    } else {
+      console.warn('Attribute not found for hash:', decoded);
+    }
+  } else {
+    console.log('Unrecognized hash route:', hash);
+  }
+}
+
+/* ========== ATTRIBUTE INDEX BUILDING ========== */
 
 function buildAttributeIndex() {
   attributeIndex = {};
@@ -139,6 +213,8 @@ function buildAttributeIndex() {
 
   console.log('Built attribute index:', attributeIndex);
 }
+
+/* ========== VIEW SWITCHING ========== */
 
 function switchView(which) {
   if (!datasetsView || !attributesView || !datasetsTab || !attributesTab) {
@@ -207,8 +283,12 @@ function applyDatasetFilters() {
   if (datasetDetail) datasetDetail.classList.add('hidden');
 }
 
+// Show dataset detail & update URL
 function showDatasetDetail(d) {
   if (!datasetDetail) return;
+
+  // Update URL hash for deep linking
+  updateHash('dataset=' + encodeURIComponent(d.id));
 
   datasetDetail.classList.remove('hidden');
 
@@ -271,50 +351,45 @@ function showDatasetDetail(d) {
   `;
 }
 
+/* ========== CROSS-NAV HELPERS ========== */
 
+// From dataset detail: click attribute name
 function openAttributeFromDataset(attrName) {
   console.log('Opening attribute from dataset:', attrName);
 
-  // Switch view
   switchView('attributes');
 
-  // Ensure attribute list is showing the full set
   filteredAttributes = Object.values(attributeIndex);
   renderAttributeList();
 
-  // Open the detail panel for that attribute
   showAttributeDetail(attrName);
 
-  // Scroll the detail panel to top
-  attributeDetail?.scrollTo({ top: 0, behavior: 'smooth' });
+  if (attributeDetail && typeof attributeDetail.scrollTo === 'function') {
+    attributeDetail.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
-
+// From attribute detail: click dataset name
 function openDatasetFromAttribute(datasetId) {
   console.log('Opening dataset from attribute:', datasetId);
 
-  // Switch view
   switchView('datasets');
 
-  // Reset filtered dataset list (we want them all shown)
   filteredDatasets = catalog;
   renderDatasetList();
 
-  // Find the dataset
   const d = catalog.find(ds => ds.id === datasetId);
   if (!d) {
-    console.warn('Dataset not found:', datasetId);
+    console.warn('Dataset not found for id:', datasetId);
     return;
   }
 
-  // Open the dataset detail panel
   showDatasetDetail(d);
 
-  // Scroll to top
-  datasetDetail?.scrollTo({ top: 0, behavior: 'smooth' });
+  if (datasetDetail && typeof datasetDetail.scrollTo === 'function') {
+    datasetDetail.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
-
-
 
 /* ========== ATTRIBUTES VIEW ========== */
 
@@ -364,11 +439,18 @@ function applyAttributeFilters() {
   if (attributeDetail) attributeDetail.classList.add('hidden');
 }
 
+// Show attribute detail & update URL
 function showAttributeDetail(name) {
   if (!attributeDetail) return;
 
   const a = attributeIndex[name];
-  if (!a) return;
+  if (!a) {
+    console.warn('Attribute not found in index:', name);
+    return;
+  }
+
+  // Update URL hash for deep linking
+  updateHash('attribute=' + encodeURIComponent(a.name));
 
   attributeDetail.classList.remove('hidden');
 
@@ -384,12 +466,13 @@ function showAttributeDetail(name) {
           ${a.datasets
             .map(
               d => `
-              <li>
-              <a href="#" onclick="openDatasetFromAttribute('${d.id}'); return false;">
-                <strong>${d.title}</strong>
-              </a>
-              <code>${d.id}</code>
-              </li>`
+                <li>
+                  <a href="#" onclick="openDatasetFromAttribute('${d.id}'); return false;">
+                    <strong>${d.title}</strong>
+                  </a>
+                  <code>${d.id}</code>
+                </li>
+              `
             )
             .join('')}
         </ul>`
