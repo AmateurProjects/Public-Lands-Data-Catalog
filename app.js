@@ -1,20 +1,55 @@
-
-const CATALOG_URL = 'data/catalog.json'; // adjust if needed
+const CATALOG_URL = 'data/catalog.json';
 
 let catalog = [];
 let filteredCatalog = [];
 
-const searchInput = document.getElementById('searchInput');
-const topicFilter = document.getElementById('topicFilter');
-const datasetList = document.getElementById('datasetList');
-const datasetDetail = document.getElementById('datasetDetail');
+let searchInput;
+let topicFilter;
+let datasetList;
+let datasetDetail;
+
+document.addEventListener('DOMContentLoaded', () => {
+  searchInput = document.getElementById('searchInput');
+  topicFilter = document.getElementById('topicFilter');
+  datasetList = document.getElementById('datasetList');
+  datasetDetail = document.getElementById('datasetDetail');
+
+  searchInput.addEventListener('input', applyFilters);
+  topicFilter.addEventListener('change', applyFilters);
+
+  loadCatalog();
+});
 
 async function loadCatalog() {
-  const res = await fetch(CATALOG_URL);
-  catalog = await res.json();
-  filteredCatalog = catalog;
-  populateTopicFilter();
-  renderList();
+  try {
+    const res = await fetch(CATALOG_URL);
+
+    if (!res.ok) {
+      console.error('Failed to fetch catalog.json', res.status, res.statusText);
+      datasetList.innerHTML = `<p>Error loading catalog (HTTP ${res.status}).</p>`;
+      return;
+    }
+
+    const raw = await res.json();
+    console.log('Raw catalog JSON:', raw);
+
+    // Expect an array at the top level
+    if (!Array.isArray(raw)) {
+      console.error('catalog.json is not an array');
+      datasetList.innerHTML =
+        '<p>catalog.json is not an array. It should be like [ { ...dataset... }, ... ].</p>';
+      return;
+    }
+
+    catalog = raw;
+    filteredCatalog = catalog;
+
+    populateTopicFilter();
+    renderList();
+  } catch (err) {
+    console.error('Error loading catalog', err);
+    datasetList.innerHTML = '<p>Error loading catalog (check console for details).</p>';
+  }
 }
 
 function populateTopicFilter() {
@@ -79,66 +114,10 @@ function showDetail(d) {
     <ul>
       <li><strong>ID:</strong> ${d.id}</li>
       <li><strong>Owner:</strong> ${d.owner || '—'}</li>
-      <li><strong>Contact:</strong> ${
-        d.contact_email
-          ? `<a href="mailto:${d.contact_email}">${d.contact_email}</a>`
-          : '—'
-      }</li>
       <li><strong>Topics:</strong> ${(d.topics || []).join(', ') || '—'}</li>
       <li><strong>Keywords:</strong> ${(d.keywords || []).join(', ') || '—'}</li>
-      <li><strong>Update frequency:</strong> ${d.update_frequency || '—'}</li>
       <li><strong>Status:</strong> ${d.status || '—'}</li>
       <li><strong>Last updated:</strong> ${d.last_updated || '—'}</li>
     </ul>
-
-    <h3>Access</h3>
-    <ul>
-      ${(d.distribution || [])
-        .map(
-          dist => `
-        <li>
-          <strong>${dist.type}</strong> (${dist.format || 'unknown'}):
-          <a href="${dist.url}" target="_blank" rel="noopener">Open</a>
-        </li>`
-        )
-        .join('') || '<li>None listed.</li>'}
-    </ul>
-
-    <h3>Metadata</h3>
-    <ul>
-      <li><strong>Standard:</strong> ${d.metadata?.standard || '—'}</li>
-      <li><a href="${d.metadata?.xml_url || '#'}" target="_blank" rel="noopener">
-        ${d.metadata?.xml_url ? 'View metadata XML' : 'No metadata URL'}
-      </a></li>
-    </ul>
-
-    <button id="suggestChangeBtn">Suggest a change</button>
   `;
-
-  const btn = document.getElementById('suggestChangeBtn');
-  btn.addEventListener('click', () => openSuggestChange(d));
 }
-
-// Make a GitHub issues link with pre-filled title/body
-function openSuggestChange(d) {
-  const owner = 'AmateurProjects';
-  const repo = 'Public-Lands-Data-Catalog';
-
-  const title = encodeURIComponent(`Change request: ${d.id}`);
-  const body = encodeURIComponent(
-    `Please describe the requested change for dataset **${d.id} (${d.title})**.\n\n` +
-      `- What is wrong or missing?\n- Suggested new values?\n\n` +
-      `Current record:\n\`\`\`json\n${JSON.stringify(d, null, 2)}\n\`\`\`\n`
-  );
-
-  const url = `https://github.com/${owner}/${repo}/issues/new?title=${title}&body=${body}`;
-  window.open(url, '_blank', 'noopener');
-}
-
-searchInput.addEventListener('input', applyFilters);
-topicFilter.addEventListener('change', applyFilters);
-
-loadCatalog().catch(err => {
-  console.error('Failed to load catalog', err);
-  datasetList.innerHTML = '<p>Error loading catalog.</p>';
-});
