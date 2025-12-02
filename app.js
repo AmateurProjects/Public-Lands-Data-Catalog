@@ -2,7 +2,7 @@ const CATALOG_URL = 'data/catalog.json';
 
 let catalog = [];
 let filteredDatasets = [];
-let attributeIndex = {}; // name -> { name, examples, datasets: [...] }
+let attributeIndex = {};
 let filteredAttributes = [];
 
 let datasetSearchInput;
@@ -17,7 +17,8 @@ let datasetsTab;
 let attributesTab;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Grab DOM references
+  console.log('DOM loaded, wiring up UI...');
+
   datasetSearchInput = document.getElementById('datasetSearchInput');
   attributeSearchInput = document.getElementById('attributeSearchInput');
   datasetList = document.getElementById('datasetList');
@@ -29,29 +30,58 @@ document.addEventListener('DOMContentLoaded', () => {
   datasetsTab = document.getElementById('datasetsTab');
   attributesTab = document.getElementById('attributesTab');
 
-  // Wire events
-  datasetSearchInput.addEventListener('input', applyDatasetFilters);
-  attributeSearchInput.addEventListener('input', applyAttributeFilters);
-  datasetsTab.addEventListener('click', () => switchView('datasets'));
-  attributesTab.addEventListener('click', () => switchView('attributes'));
+  // Defensive wiring – only attach listeners if elements exist
+  if (datasetSearchInput) {
+    datasetSearchInput.addEventListener('input', applyDatasetFilters);
+  } else {
+    console.warn('datasetSearchInput element not found');
+  }
+
+  if (attributeSearchInput) {
+    attributeSearchInput.addEventListener('input', applyAttributeFilters);
+  } else {
+    console.warn('attributeSearchInput element not found');
+  }
+
+  if (datasetsTab) {
+    datasetsTab.addEventListener('click', () => switchView('datasets'));
+  } else {
+    console.warn('datasetsTab element not found');
+  }
+
+  if (attributesTab) {
+    attributesTab.addEventListener('click', () => switchView('attributes'));
+  } else {
+    console.warn('attributesTab element not found');
+  }
+
+  // Default to datasets view
+  switchView('datasets');
 
   loadCatalog();
 });
 
 async function loadCatalog() {
   try {
+    console.log('Fetching catalog from', CATALOG_URL);
     const res = await fetch(CATALOG_URL);
     if (!res.ok) {
       console.error('Failed to fetch catalog.json', res.status, res.statusText);
-      datasetList.innerHTML = `<p>Error loading catalog (HTTP ${res.status}).</p>`;
+      if (datasetList) {
+        datasetList.innerHTML = `<p>Error loading catalog (HTTP ${res.status}).</p>`;
+      }
       return;
     }
 
     const raw = await res.json();
+    console.log('Raw catalog JSON:', raw);
+
     if (!Array.isArray(raw)) {
       console.error('catalog.json is not an array at the top level');
-      datasetList.innerHTML =
-        '<p>catalog.json should be a JSON array: [ { dataset1 }, { dataset2 }, ... ].</p>';
+      if (datasetList) {
+        datasetList.innerHTML =
+          '<p>catalog.json should be a JSON array: [ { dataset1 }, { dataset2 }, ... ].</p>';
+      }
       return;
     }
 
@@ -65,7 +95,9 @@ async function loadCatalog() {
     renderAttributeList();
   } catch (err) {
     console.error('Error loading catalog', err);
-    datasetList.innerHTML = '<p>Error loading catalog (check console).</p>';
+    if (datasetList) {
+      datasetList.innerHTML = '<p>Error loading catalog (check console).</p>';
+    }
   }
 }
 
@@ -76,6 +108,8 @@ function buildAttributeIndex() {
     const attrs = dataset.attributes || [];
     attrs.forEach(attr => {
       const key = attr.name;
+      if (!key) return;
+
       if (!attributeIndex[key]) {
         attributeIndex[key] = {
           name: attr.name,
@@ -99,13 +133,19 @@ function buildAttributeIndex() {
     });
   });
 
-  // Convert example sets to arrays for display
   Object.values(attributeIndex).forEach(a => {
     a.examples = Array.from(a.examples);
   });
+
+  console.log('Built attribute index:', attributeIndex);
 }
 
 function switchView(which) {
+  if (!datasetsView || !attributesView || !datasetsTab || !attributesTab) {
+    console.warn('View elements not fully found, switchView skipped');
+    return;
+  }
+
   if (which === 'datasets') {
     datasetsView.classList.remove('hidden');
     attributesView.classList.add('hidden');
@@ -122,6 +162,8 @@ function switchView(which) {
 /* ========== DATASETS VIEW ========== */
 
 function renderDatasetList() {
+  if (!datasetList) return;
+
   datasetList.innerHTML = '';
 
   if (!filteredDatasets.length) {
@@ -145,7 +187,7 @@ function renderDatasetList() {
 }
 
 function applyDatasetFilters() {
-  const q = (datasetSearchInput.value || '').toLowerCase();
+  const q = (datasetSearchInput?.value || '').toLowerCase();
 
   filteredDatasets = catalog.filter(d => {
     const text = [
@@ -162,10 +204,12 @@ function applyDatasetFilters() {
   });
 
   renderDatasetList();
-  datasetDetail.classList.add('hidden');
+  if (datasetDetail) datasetDetail.classList.add('hidden');
 }
 
 function showDatasetDetail(d) {
+  if (!datasetDetail) return;
+
   datasetDetail.classList.remove('hidden');
 
   const attrs = d.attributes || [];
@@ -230,6 +274,8 @@ function showDatasetDetail(d) {
 /* ========== ATTRIBUTES VIEW ========== */
 
 function renderAttributeList() {
+  if (!attributeList) return;
+
   attributeList.innerHTML = '';
 
   if (!filteredAttributes.length) {
@@ -253,7 +299,7 @@ function renderAttributeList() {
 }
 
 function applyAttributeFilters() {
-  const q = (attributeSearchInput.value || '').toLowerCase();
+  const q = (attributeSearchInput?.value || '').toLowerCase();
 
   filteredAttributes = Object.values(attributeIndex).filter(a => {
     const text = [
@@ -270,10 +316,12 @@ function applyAttributeFilters() {
   });
 
   renderAttributeList();
-  attributeDetail.classList.add('hidden');
+  if (attributeDetail) attributeDetail.classList.add('hidden');
 }
 
 function showAttributeDetail(name) {
+  if (!attributeDetail) return;
+
   const a = attributeIndex[name];
   if (!a) return;
 
@@ -290,7 +338,7 @@ function showAttributeDetail(name) {
         <ul>
           ${a.datasets
             .map(
-              d => `<li data-dataset-id="${d.id}"><strong>${d.title}</strong> <code>${d.id}</code></li>`
+              d => `<li><strong>${d.title}</strong> <code>${d.id}</code></li>`
             )
             .join('')}
         </ul>`
