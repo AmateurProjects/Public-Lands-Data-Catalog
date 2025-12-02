@@ -8,18 +8,44 @@
 <body>
   <header>
     <h1>Public Lands Data Catalog</h1>
-    <input id="searchInput" type="search" placeholder="Search datasets..." />
-    <select id="topicFilter">
-      <option value="">All topics</option>
-    </select>
+    <nav>
+      <button id="datasetsTab" class="tab-button active">Datasets</button>
+      <button id="attributesTab" class="tab-button">Attributes</button>
+    </nav>
   </header>
 
   <main>
-    <div id="datasetList"></div>
-    <div id="datasetDetail" class="hidden"></div>
+    <!-- DATASETS VIEW -->
+    <section id="datasetsView">
+      <div class="sidebar">
+        <div class="toolbar">
+          <input
+            id="datasetSearchInput"
+            type="search"
+            placeholder="Search datasets..."
+          />
+        </div>
+        <div id="datasetList"></div>
+      </div>
+      <div id="datasetDetail" class="detail-panel hidden"></div>
+    </section>
+
+    <!-- ATTRIBUTES VIEW -->
+    <section id="attributesView" class="hidden">
+      <div class="sidebar">
+        <div class="toolbar">
+          <input
+            id="attributeSearchInput"
+            type="search"
+            placeholder="Search attributes..."
+          />
+        </div>
+        <div id="attributeList"></div>
+      </div>
+      <div id="attributeDetail" class="detail-panel hidden"></div>
+    </section>
   </main>
 
   <script src="app.js"></script>
 </body>
 </html>
-
