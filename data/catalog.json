@@ -1,6 +1,6 @@
 [
   {
-    "id": "blm_rmp_boundaries_1",
+    "id": "blm_rmp_boundaries",
     "title": "BLM Resource Management Plan Boundaries",
     "description": "Polygon boundaries of BLM Resource Management Plans.",
     "owner": "BLM, Division of Planning",
@@ -22,11 +22,6 @@
         "type": "feature_service",
         "url": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
         "format": "ESRI Feature Service"
-      },
-      {
-        "type": "download",
-        "url": "https://example.com/downloads/rmp.gdb.zip",
-        "format": "File Geodatabase"
       }
     ],
     "metadata": {
@@ -35,82 +30,79 @@
     },
     "license": "CC-BY-4.0",
     "last_updated": "2025-11-30",
-    "notes": "Used in NEPA and land use planning program-wide."
+    "notes": "Used in NEPA and land use planning program-wide.",
+    "attributes": [
+      {
+        "name": "RMP_ID",
+        "label": "RMP Identifier",
+        "type": "string",
+        "nullable": false,
+        "description": "Unique identifier for the RMP area.",
+        "example": "RMP-UT-001"
+      },
+      {
+        "name": "STATE",
+        "label": "State",
+        "type": "string",
+        "nullable": false,
+        "description": "Two-letter state or territory code.",
+        "example": "UT"
+      },
+      {
+        "name": "EFFECTIVE_DATE",
+        "label": "Effective Date",
+        "type": "date",
+        "nullable": false,
+        "description": "Date the plan became effective.",
+        "example": "2016-09-01"
+      }
+    ]
   },
   {
-    "id": "blm_rmp_boundaries_2",
-    "title": "BLM Resource Management Plan Boundaries",
-    "description": "Polygon boundaries of BLM Resource Management Plans.",
-    "owner": "BLM, Division of Planning",
-    "contact_email": "planning@example.gov",
-    "topics": ["planning", "land_status"],
-    "keywords": ["RMP", "land use planning", "BLM"],
+    "id": "blm_wildfire_perimeters",
+    "title": "BLM Wildfire Perimeters",
+    "description": "Perimeters of wildfires intersecting BLM-managed lands.",
+    "owner": "BLM, Fire and Aviation",
+    "contact_email": "fire@example.gov",
+    "topics": ["wildfire", "risk"],
+    "keywords": ["fire", "perimeter", "burned area"],
     "spatial_scope": "CONUS",
-    "extent": {
-      "west": -125.0,
-      "south": 31.0,
-      "east": -101.0,
-      "north": 49.0
-    },
     "projection": "EPSG:4326",
-    "update_frequency": "annual",
     "status": "authoritative",
-    "distribution": [
+    "last_updated": "2025-12-02",
+    "attributes": [
       {
-        "type": "feature_service",
-        "url": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
-        "format": "ESRI Feature Service"
+        "name": "FIRE_ID",
+        "label": "Fire Identifier",
+        "type": "string",
+        "nullable": false,
+        "description": "Unique identifier for the fire event.",
+        "example": "2024-UT-BLM-00123"
       },
       {
-        "type": "download",
-        "url": "https://example.com/downloads/rmp.gdb.zip",
-        "format": "File Geodatabase"
-      }
-    ],
-    "metadata": {
-      "standard": "FGDC CSDGM",
-      "xml_url": "https://example.com/metadata/rmp.xml"
-    },
-    "license": "CC-BY-4.0",
-    "last_updated": "2025-11-30",
-    "notes": "Used in NEPA and land use planning program-wide."
-  },
-  {
-    "id": "blm_rmp_boundaries_3",
-    "title": "BLM Resource Management Plan Boundaries",
-    "description": "Polygon boundaries of BLM Resource Management Plans.",
-    "owner": "BLM, Division of Planning",
-    "contact_email": "planning@example.gov",
-    "topics": ["planning", "land_status"],
-    "keywords": ["RMP", "land use planning", "BLM"],
-    "spatial_scope": "CONUS",
-    "extent": {
-      "west": -125.0,
-      "south": 31.0,
-      "east": -101.0,
-      "north": 49.0
-    },
-    "projection": "EPSG:4326",
-    "update_frequency": "annual",
-    "status": "authoritative",
-    "distribution": [
-      {
-        "type": "feature_service",
-        "url": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
-        "format": "ESRI Feature Service"
+        "name": "FIRE_NAME",
+        "label": "Fire Name",
+        "type": "string",
+        "nullable": true,
+        "description": "Common name of the fire, if assigned.",
+        "example": "Cottonwood Ridge"
       },
       {
-        "type": "download",
-        "url": "https://example.com/downloads/rmp.gdb.zip",
-        "format": "File Geodatabase"
+        "name": "ACRES_BURNED",
+        "label": "Acres Burned",
+        "type": "float",
+        "nullable": false,
+        "description": "Total acres burned within the fire perimeter.",
+        "example": 12789.4
+      },
+      {
+        "name": "DISCOVERY_DATE",
+        "label": "Discovery Date",
+        "type": "date",
+        "nullable": false,
+        "description": "Date the fire was first discovered.",
+        "example": "2024-07-15"
       }
-    ],
-    "metadata": {
-      "standard": "FGDC CSDGM",
-      "xml_url": "https://example.com/metadata/rmp.xml"
-    },
-    "license": "CC-BY-4.0",
-    "last_updated": "2025-11-30",
-    "notes": "Used in NEPA and land use planning program-wide."
+    ]
   }
 ]
