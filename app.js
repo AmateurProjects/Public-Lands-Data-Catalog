@@ -288,7 +288,31 @@ function openAttributeFromDataset(attrName) {
   // Scroll the detail panel to top
   attributeDetail?.scrollTo({ top: 0, behavior: 'smooth' });
 }
- 
+
+
+function openDatasetFromAttribute(datasetId) {
+  console.log('Opening dataset from attribute:', datasetId);
+
+  // Switch view
+  switchView('datasets');
+
+  // Reset filtered dataset list (we want them all shown)
+  filteredDatasets = catalog;
+  renderDatasetList();
+
+  // Find the dataset
+  const d = catalog.find(ds => ds.id === datasetId);
+  if (!d) {
+    console.warn('Dataset not found:', datasetId);
+    return;
+  }
+
+  // Open the dataset detail panel
+  showDatasetDetail(d);
+
+  // Scroll to top
+  datasetDetail?.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 
 
@@ -359,7 +383,13 @@ function showAttributeDetail(name) {
         <ul>
           ${a.datasets
             .map(
-              d => `<li><strong>${d.title}</strong> <code>${d.id}</code></li>`
+              d => `
+              <li>
+              <a href="#" onclick="openDatasetFromAttribute('${d.id}'); return false;">
+                <strong>${d.title}</strong>
+              </a>
+              <code>${d.id}</code>
+              </li>`
             )
             .join('')}
         </ul>`
