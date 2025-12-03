@@ -249,3 +249,20 @@ code {
   border-radius: var(--radius);
   color: var(--accent-hover);
 }
+
+.conflict-warning {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid #f39c12;
+  border-radius: var(--radius);
+  background: #221a11; /* works with your dark theme */
+  font-size: 0.9rem;
+}
+
+.conflict-warning h4 {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+
+
