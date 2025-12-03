@@ -1,20 +1,14 @@
 [
   {
-    "id": "blm_rmp_boundaries",
-    "title": "BLM Resource Management Plan Boundaries",
-    "description": "Polygon boundaries of BLM Resource Management Plans.",
-    "owner": "BLM, Division of Planning",
-    "contact_email": "planning@example.gov",
+    "GIS Layer": "BLM Resource Management Plan Boundaries",
+    "Feature Class Name": "RMPBND_A",
+    "Description": "Polygon boundaries of BLM Resource Management Plans.",
+    "Owner": "BLM, Division of Planning",
+    "Contact_email": "planning@example.gov",
     "topics": ["planning", "land_status"],
     "keywords": ["RMP", "land use planning", "BLM"],
-    "spatial_scope": "CONUS",
-    "extent": {
-      "west": -125.0,
-      "south": 31.0,
-      "east": -101.0,
-      "north": 49.0
+
     },
-    "projection": "EPSG:4326",
     "update_frequency": "annual",
     "status": "authoritative",
     "distribution": [
@@ -28,7 +22,7 @@
       "standard": "FGDC CSDGM",
       "xml_url": "https://example.com/metadata/rmp.xml"
     },
-    "license": "CC-BY-4.0",
+    "access": "public",
     "last_updated": "2025-11-30",
     "notes": "Used in NEPA and land use planning program-wide.",
     "attributes": [
@@ -36,25 +30,22 @@
         "name": "RMP_ID",
         "label": "RMP Identifier",
         "type": "string",
-        "nullable": false,
         "description": "Unique identifier for the RMP area.",
-        "example": "RMP-UT-001"
+        "format example": "RMP-UT-001"
       },
       {
         "name": "STATE",
         "label": "State",
         "type": "string",
-        "nullable": false,
         "description": "Two-letter state or territory code.",
-        "example": "UT"
+        "format example": "UT"
       },
       {
         "name": "EFFECTIVE_DATE",
         "label": "Effective Date",
         "type": "date",
-        "nullable": false,
         "description": "Date the plan became effective.",
-        "example": "2016-09-01"
+        "format example": "2016-09-01"
       }
     ]
   },
