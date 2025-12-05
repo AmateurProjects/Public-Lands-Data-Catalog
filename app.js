@@ -3,8 +3,8 @@
 // ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
 
-// >>>>> SET THIS to your real GitHub repo's new-issue URL base
-// Example: 'https://github.com/blm-gis/data-catalog/issues/new'
+// >>>>> SET THIS to your real GitHub repo's "new issue" URL base
+// Example: 'https://github.com/blm-gis/public-lands-data-catalog/issues/new'
 const GITHUB_NEW_ISSUE_BASE = 'https://github.com/AmateurProjects/Public-Lands-Data-Catalog/issues/new';
 
 // ====== CATALOG MODULE (shared loader + indexes) ======
@@ -75,16 +75,6 @@ const Catalog = (function () {
     return datasetsByAttributeId[attrId] || [];
   }
 
-  function buildDatasetUrl(datasetId) {
-    // Adjust if your dataset page name or query param is different
-    return `dataset.html?dataset=${encodeURIComponent(datasetId)}`;
-  }
-
-  function buildAttributeUrl(attrId) {
-    // Adjust if your attribute page name or query param is different
-    return `attribute.html?attribute=${encodeURIComponent(attrId)}`;
-  }
-
   function buildGithubIssueUrlForDataset(dataset) {
     const title = encodeURIComponent(`Dataset change request: ${dataset.id}`);
     const bodyLines = [
@@ -123,258 +113,337 @@ const Catalog = (function () {
     getDatasetById,
     getAttributesForDataset,
     getDatasetsForAttribute,
-    buildDatasetUrl,
-    buildAttributeUrl,
     buildGithubIssueUrlForDataset,
     buildGithubIssueUrlForAttribute
   };
 })();
 
-// ====== PAGE INITIALIZER ======
+// ====== MAIN APP (tabs, lists, detail panels) ======
 document.addEventListener('DOMContentLoaded', async () => {
-  const params = new URLSearchParams(window.location.search);
-  const datasetId = params.get('dataset');
-  const attrId = params.get('attribute');
+  const datasetsTabBtn = document.getElementById('datasetsTab');
+  const attributesTabBtn = document.getElementById('attributesTab');
+  const datasetsView = document.getElementById('datasetsView');
+  const attributesView = document.getElementById('attributesView');
 
+  const datasetSearchInput = document.getElementById('datasetSearchInput');
+  const attributeSearchInput = document.getElementById('attributeSearchInput');
+
+  const datasetListEl = document.getElementById('datasetList');
+  const attributeListEl = document.getElementById('attributeList');
+
+  // Load catalog once
+  let catalog;
   try {
-    await Catalog.loadCatalog();
+    catalog = await Catalog.loadCatalog();
   } catch (err) {
     console.error('Failed to load catalog.json:', err);
+    if (datasetListEl) datasetListEl.textContent = 'Error loading catalog.';
+    if (attributeListEl) attributeListEl.textContent = 'Error loading catalog.';
     return;
   }
 
-  // Decide which view we are on based on query params + presence of elements
-  if (datasetId && document.getElementById('dataset-title')) {
-    renderDatasetPage(datasetId);
-  } else if (attrId && document.getElementById('attribute-title')) {
-    renderAttributePage(attrId);
-  } else {
-    // Optional: index/home listing view
-    if (document.getElementById('dataset-list')) {
-      renderDatasetList();
+  const allDatasets = catalog.datasets || [];
+  const allAttributes = catalog.attributes || [];
+
+  // ---- Tab switching ----
+  function showDatasetsView() {
+    datasetsView.classList.remove('hidden');
+    attributesView.classList.add('hidden');
+    datasetsTabBtn.classList.add('active');
+    attributesTabBtn.classList.remove('active');
+  }
+
+  function showAttributesView() {
+    attributesView.classList.remove('hidden');
+    datasetsView.classList.add('hidden');
+    attributesTabBtn.classList.add('active');
+    datasetsTabBtn.classList.remove('active');
+  }
+
+  datasetsTabBtn.addEventListener('click', showDatasetsView);
+  attributesTabBtn.addEventListener('click', showAttributesView);
+
+  // ---- Render lists ----
+  function renderDatasetList(filterText = '') {
+    if (!datasetListEl) return;
+    const ft = filterText.trim().toLowerCase();
+
+    const filtered = !ft
+      ? allDatasets
+      : allDatasets.filter(ds => {
+          const haystack = [
+            ds.id,
+            ds.title,
+            ds.description,
+            ...(ds.topics || []),
+            ...(ds.keywords || [])
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(ft);
+        });
+
+    if (!filtered.length) {
+      datasetListEl.innerHTML = '<p>No datasets found.</p>';
+      return;
     }
-    if (document.getElementById('attribute-list')) {
-      renderAttributeList();
+
+    const list = document.createElement('ul');
+    filtered.forEach(ds => {
+      const li = document.createElement('li');
+      li.className = 'list-item dataset-item';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-item-button';
+      btn.textContent = ds.title || ds.id;
+      btn.addEventListener('click', () => {
+        showDatasetsView();
+        renderDatasetDetail(ds.id);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+
+    datasetListEl.innerHTML = '';
+    datasetListEl.appendChild(list);
+  }
+
+  function renderAttributeList(filterText = '') {
+    if (!attributeListEl) return;
+    const ft = filterText.trim().toLowerCase();
+
+    const filtered = !ft
+      ? allAttributes
+      : allAttributes.filter(attr => {
+          const haystack = [
+            attr.id,
+            attr.label,
+            attr.description
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(ft);
+        });
+
+    if (!filtered.length) {
+      attributeListEl.innerHTML = '<p>No attributes found.</p>';
+      return;
     }
-  }
-});
 
-// ====== DATASET PAGE RENDERING ======
-async function renderDatasetPage(datasetId) {
-  const dataset = Catalog.getDatasetById(datasetId);
+    const list = document.createElement('ul');
+    filtered.forEach(attr => {
+      const li = document.createElement('li');
+      li.className = 'list-item attribute-item';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-item-button';
+      btn.textContent = `${attr.id} – ${attr.label || ''}`;
+      btn.addEventListener('click', () => {
+        showAttributesView();
+        renderAttributeDetail(attr.id);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
 
-  if (!dataset) {
-    console.error(`Dataset not found: ${datasetId}`);
-    renderDatasetNotFound(datasetId);
-    return;
-  }
-
-  // Title
-  const titleEl = document.getElementById('dataset-title');
-  if (titleEl) {
-    titleEl.textContent = dataset.title || dataset.id;
-  }
-
-  // Description
-  const descEl = document.getElementById('dataset-description');
-  if (descEl) {
-    descEl.textContent = dataset.description || '';
+    attributeListEl.innerHTML = '';
+    attributeListEl.appendChild(list);
   }
 
-  // Meta info (office, email, etc.)
-  const metaEl = document.getElementById('dataset-meta');
-  if (metaEl) {
-    metaEl.innerHTML = `
-      <p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>
-      <p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>
-      <p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>
-      <p><strong>Topics:</strong> ${Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''}</p>
-      <p><strong>Keywords:</strong> ${Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''}</p>
-      <p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>
-      <p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>
-      <p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>
-      <p><strong>Public Web Service:</strong> ${
-        dataset.public_web_service
-          ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
-          : ''
-      }</p>
-      <p><strong>Internal Web Service:</strong> ${
-        dataset.internal_web_service
-          ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
-          : ''
-      }</p>
-      <p><strong>Data Standard:</strong> ${
-        dataset.data_standard
-          ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
-          : ''
-      }</p>
-      ${dataset.notes ? `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>` : ''}
-    `;
+  // Initial render
+  renderDatasetList();
+  renderAttributeList();
+
+  // ---- Search wiring ----
+  if (datasetSearchInput) {
+    datasetSearchInput.addEventListener('input', () => {
+      renderDatasetList(datasetSearchInput.value);
+    });
   }
 
-  // Attributes list (attributes that belong to this dataset)
-  const attrsEl = document.getElementById('dataset-attributes');
-  if (attrsEl) {
+  if (attributeSearchInput) {
+    attributeSearchInput.addEventListener('input', () => {
+      renderAttributeList(attributeSearchInput.value);
+    });
+  }
+
+  // ---- Detail renderers ----
+  const datasetDetailEl = document.getElementById('datasetDetail');
+  const attributeDetailEl = document.getElementById('attributeDetail');
+
+  function renderDatasetDetail(datasetId) {
+    if (!datasetDetailEl) return;
+
+    const dataset = Catalog.getDatasetById(datasetId);
+    if (!dataset) {
+      datasetDetailEl.classList.remove('hidden');
+      datasetDetailEl.innerHTML = `<p>Dataset not found: ${escapeHtml(datasetId)}</p>`;
+      return;
+    }
+
     const attrs = Catalog.getAttributesForDataset(dataset);
 
-    if (!attrs.length) {
-      attrsEl.innerHTML = '<p>No attributes defined for this dataset.</p>';
-    } else {
-      const list = document.createElement('ul');
-      attrs.forEach(attr => {
-        const li = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = Catalog.buildAttributeUrl(attr.id);
-        link.textContent = `${attr.id} – ${attr.label || ''}`;
-        li.appendChild(link);
-        list.appendChild(li);
-      });
-      attrsEl.innerHTML = '<h2>Attributes</h2>';
-      attrsEl.appendChild(list);
+    // Build dataset detail HTML
+    let html = '';
+    html += `<h2>${escapeHtml(dataset.title || dataset.id)}</h2>`;
+    if (dataset.description) {
+      html += `<p>${escapeHtml(dataset.description)}</p>`;
     }
-  }
 
-  // Suggest change button (dataset)
-  const suggestBtn = document.getElementById('dataset-suggest-change');
-  if (suggestBtn) {
-    suggestBtn.href = Catalog.buildGithubIssueUrlForDataset(dataset);
-  }
-}
+    html += '<div class="detail-section">';
+    html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
+    html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
+    html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
+    html += `<p><strong>Topics:</strong> ${
+      Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''
+    }</p>`;
+    html += `<p><strong>Keywords:</strong> ${
+      Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''
+    }</p>`;
+    html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
+    html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
+    html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
+    html += `<p><strong>Public Web Service:</strong> ${
+      dataset.public_web_service
+        ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
+        : ''
+    }</p>`;
+    html += `<p><strong>Internal Web Service:</strong> ${
+      dataset.internal_web_service
+        ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
+        : ''
+    }</p>`;
+    html += `<p><strong>Data Standard:</strong> ${
+      dataset.data_standard
+        ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+        : ''
+    }</p>`;
+    if (dataset.notes) {
+      html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
+    }
+    html += '</div>';
 
-function renderDatasetNotFound(datasetId) {
-  const titleEl = document.getElementById('dataset-title');
-  if (titleEl) {
-    titleEl.textContent = `Dataset not found: ${datasetId}`;
-  }
-  const descEl = document.getElementById('dataset-description');
-  if (descEl) {
-    descEl.textContent = 'The requested dataset ID does not exist in the catalog.';
-  }
-}
+    // Attributes section
+    html += '<div class="detail-section">';
+    html += '<h3>Attributes</h3>';
+    if (!attrs.length) {
+      html += '<p>No attributes defined for this dataset.</p>';
+    } else {
+      html += '<ul>';
+      attrs.forEach(attr => {
+        html += `
+          <li>
+            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+            </button>
+          </li>`;
+      });
+      html += '</ul>';
+    }
+    html += '</div>';
 
-// ====== ATTRIBUTE PAGE RENDERING ======
-async function renderAttributePage(attrId) {
-  const attribute = Catalog.getAttributeById(attrId);
-
-  if (!attribute) {
-    console.error(`Attribute not found: ${attrId}`);
-    renderAttributeNotFound(attrId);
-    return;
-  }
-
-  const titleEl = document.getElementById('attribute-title');
-  if (titleEl) {
-    titleEl.textContent = `${attribute.id} – ${attribute.label || ''}`;
-  }
-
-  const detailsEl = document.getElementById('attribute-details');
-  if (detailsEl) {
-    detailsEl.innerHTML = `
-      <p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>
-      <p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>
-      <p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>
-      <p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>
-      <p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>
-      ${
-        attribute.example !== undefined
-          ? `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`
-          : ''
-      }
+    // Suggest change button (dataset)
+    const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
+    html += `
+      <div class="detail-section">
+        <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
+          Suggest a change to this dataset
+        </a>
+      </div>
     `;
+
+    datasetDetailEl.innerHTML = html;
+    datasetDetailEl.classList.remove('hidden');
+
+    // Wire attribute buttons to open attribute detail view
+    const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
+    attrButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const attrId = btn.getAttribute('data-attr-id');
+        showAttributesView();
+        renderAttributeDetail(attrId);
+      });
+    });
   }
 
-  // Suggest change button (attribute)
-  const suggestBtn = document.getElementById('attribute-suggest-change');
-  if (suggestBtn) {
-    suggestBtn.href = Catalog.buildGithubIssueUrlForAttribute(attribute);
-  }
+  function renderAttributeDetail(attrId) {
+    if (!attributeDetailEl) return;
 
-  // List of datasets that use this attribute
-  const datasetsEl = document.getElementById('attribute-datasets');
-  if (datasetsEl) {
+    const attribute = Catalog.getAttributeById(attrId);
+    if (!attribute) {
+      attributeDetailEl.classList.remove('hidden');
+      attributeDetailEl.innerHTML = `<p>Attribute not found: ${escapeHtml(attrId)}</p>`;
+      return;
+    }
+
     const datasets = Catalog.getDatasetsForAttribute(attrId);
 
-    if (!datasets.length) {
-      datasetsEl.innerHTML = '<p>No datasets currently reference this attribute.</p>';
-    } else {
-      const list = document.createElement('ul');
-      datasets.forEach(ds => {
-        const li = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = Catalog.buildDatasetUrl(ds.id);
-        link.textContent = ds.title || ds.id;
-        li.appendChild(link);
-        list.appendChild(li);
-      });
-      datasetsEl.innerHTML = '<h2>Datasets using this attribute</h2>';
-      datasetsEl.appendChild(list);
+    let html = '';
+    html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
+    html += '<div class="detail-section">';
+    html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
+    html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
+    html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
+    html += `<p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>`;
+    html += `<p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>`;
+    if (attribute.example !== undefined) {
+      html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
     }
-  }
-}
+    html += '</div>';
 
-function renderAttributeNotFound(attrId) {
-  const titleEl = document.getElementById('attribute-title');
-  if (titleEl) {
-    titleEl.textContent = `Attribute not found: ${attrId}`;
-  }
-  const detailsEl = document.getElementById('attribute-details');
-  if (detailsEl) {
-    detailsEl.textContent = 'The requested attribute ID does not exist in the catalog.';
-  }
-}
+    // Datasets that use this attribute
+    html += '<div class="detail-section">';
+    html += '<h3>Datasets using this attribute</h3>';
+    if (!datasets.length) {
+      html += '<p>No datasets currently reference this attribute.</p>';
+    } else {
+      html += '<ul>';
+      datasets.forEach(ds => {
+        html += `
+          <li>
+            <button type="button" class="link-button" data-dataset-id="${escapeHtml(ds.id)}">
+              ${escapeHtml(ds.title || ds.id)}
+            </button>
+          </li>`;
+      });
+      html += '</ul>';
+    }
+    html += '</div>';
 
-// ====== OPTIONAL: INDEX PAGE LISTS ======
-async function renderDatasetList() {
-  const listEl = document.getElementById('dataset-list');
-  if (!listEl) return;
+    // Suggest change button (attribute)
+    const issueUrl = Catalog.buildGithubIssueUrlForAttribute(attribute);
+    html += `
+      <div class="detail-section">
+        <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
+          Suggest a change to this attribute
+        </a>
+      </div>
+    `;
 
-  const catalog = await Catalog.loadCatalog();
-  const datasets = catalog.datasets || [];
+    attributeDetailEl.innerHTML = html;
+    attributeDetailEl.classList.remove('hidden');
 
-  if (!datasets.length) {
-    listEl.innerHTML = '<p>No datasets found in the catalog.</p>';
-    return;
-  }
-
-  const list = document.createElement('ul');
-  datasets.forEach(ds => {
-    const li = document.createElement('li');
-    const link = document.createElement('a');
-    link.href = Catalog.buildDatasetUrl(ds.id);
-    link.textContent = ds.title || ds.id;
-    li.appendChild(link);
-    list.appendChild(li);
-  });
-
-  listEl.innerHTML = '<h2>Datasets</h2>';
-  listEl.appendChild(list);
-}
-
-async function renderAttributeList() {
-  const listEl = document.getElementById('attribute-list');
-  if (!listEl) return;
-
-  const catalog = await Catalog.loadCatalog();
-  const attributes = catalog.attributes || [];
-
-  if (!attributes.length) {
-    listEl.innerHTML = '<p>No attributes found in the catalog.</p>';
-    return;
+    // Wire dataset buttons to open dataset detail view
+    const dsButtons = attributeDetailEl.querySelectorAll('button[data-dataset-id]');
+    dsButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dsId = btn.getAttribute('data-dataset-id');
+        showDatasetsView();
+        renderDatasetDetail(dsId);
+      });
+    });
   }
 
-  const list = document.createElement('ul');
-  attributes.forEach(attr => {
-    const li = document.createElement('li');
-    const link = document.createElement('a');
-    link.href = Catalog.buildAttributeUrl(attr.id);
-    link.textContent = `${attr.id} – ${attr.label || ''}`;
-    li.appendChild(link);
-    list.appendChild(li);
-  });
-
-  listEl.innerHTML = '<h2>Attributes</h2>';
-  listEl.appendChild(list);
-}
+  // Optionally: auto-select first dataset/attribute at load
+  if (allDatasets.length) {
+    renderDatasetDetail(allDatasets[0].id);
+  }
+  if (allAttributes.length) {
+    renderAttributeDetail(allAttributes[0].id);
+  }
+});
 
 // ====== UTILS ======
 function escapeHtml(str) {
