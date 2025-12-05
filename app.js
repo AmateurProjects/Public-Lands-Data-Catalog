@@ -285,13 +285,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const attrs = Catalog.getAttributesForDataset(dataset);
 
-    // Build dataset detail HTML
     let html = '';
+
+    // Breadcrumb
+    html += `
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
+      </nav>
+    `;
+
+    // Heading + description
     html += `<h2>${escapeHtml(dataset.title || dataset.id)}</h2>`;
     if (dataset.description) {
       html += `<p>${escapeHtml(dataset.description)}</p>`;
     }
 
+    // Meta section
     html += '<div class="detail-section">';
     html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
@@ -357,6 +368,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
+    // Wire breadcrumb root
+    const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
+    if (rootBtn) {
+      rootBtn.addEventListener('click', () => {
+        showDatasetsView();
+      });
+    }
+
     // Wire attribute buttons to open attribute detail view
     const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
     attrButtons.forEach(btn => {
@@ -381,6 +400,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const datasets = Catalog.getDatasetsForAttribute(attrId);
 
     let html = '';
+
+    // Breadcrumb
+    html += `
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">${escapeHtml(attribute.id)}</span>
+      </nav>
+    `;
+
     html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
     html += '<div class="detail-section">';
     html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
@@ -424,6 +453,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
+
+    // Wire breadcrumb root
+    const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
+    if (rootBtn) {
+      rootBtn.addEventListener('click', () => {
+        showAttributesView();
+      });
+    }
 
     // Wire dataset buttons to open dataset detail view
     const dsButtons = attributeDetailEl.querySelectorAll('button[data-dataset-id]');
