@@ -363,15 +363,18 @@ function renderDatasetDetail(datasetId) {
     </div>
   `;
 
-  // Suggest change button (dataset)
-  const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
-  html += `
-    <div class="detail-section">
-      <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
-        Suggest a change to this dataset
-      </a>
-    </div>
-  `;
+ // Suggest change + export schema buttons (dataset)
+const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
+html += `
+  <div class="detail-section">
+    <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
+      Suggest a change to this dataset
+    </a>
+    <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
+      Export ArcGIS schema (Python)
+    </button>
+  </div>
+`;
 
   datasetDetailEl.innerHTML = html;
   datasetDetailEl.classList.remove('hidden');
@@ -394,6 +397,21 @@ function renderDatasetDetail(datasetId) {
   });
 }
 
+// Wire export schema button
+const exportBtn = datasetDetailEl.querySelector('button[data-export-schema]');
+if (exportBtn) {
+  exportBtn.addEventListener('click', () => {
+    const dsId = exportBtn.getAttribute('data-export-schema');
+    const ds = Catalog.getDatasetById(dsId);
+    if (!ds) return;
+    const attrs = Catalog.getAttributesForDataset(ds);
+    const script = buildArcGisSchemaPython(ds, attrs);
+    downloadTextFile(script, `${ds.id}_schema_arcpy.py`);
+  });
+}
+
+
+  
 function renderInlineAttributeDetail(attrId) {
   if (!datasetDetailEl) return;
 
@@ -651,3 +669,135 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+function buildArcGisSchemaPython(dataset, attrs) {
+  const lines = [];
+  const dsId = dataset.id || '';
+  const objname = dataset.objname || dsId;
+
+  lines.push('# -*- coding: utf-8 -*-');
+  lines.push('# Auto-generated ArcGIS schema script from Public Lands Data Catalog');
+  lines.push(`# Dataset ID: ${dsId}`);
+  if (dataset.title) {
+    lines.push(`# Title: ${dataset.title}`);
+  }
+  if (dataset.description) {
+    lines.push(`# Description: ${dataset.description}`);
+  }
+  lines.push('');
+  lines.push('import arcpy');
+  lines.push('');
+  lines.push('# TODO: Update these paths and settings before running');
+  lines.push('gdb = r"C:\\path\\to\\your.gdb"');
+  lines.push(`fc_name = "${objname}"`);
+  lines.push('geometry_type = "POLYGON"  # e.g. "POINT", "POLYLINE", "POLYGON"');
+
+  const proj = dataset.projection || '';
+  const epsgMatch = proj.match(/EPSG:(\\d+)/i);
+  if (epsgMatch) {
+    lines.push(`spatial_reference = arcpy.SpatialReference(${epsgMatch[1]})  # from ${proj}`);
+  } else {
+    lines.push('spatial_reference = None  # TODO: set a spatial reference if desired');
+  }
+
+  lines.push('');
+  lines.push('# Create the feature class');
+  lines.push('out_fc = arcpy.management.CreateFeatureclass(');
+  lines.push('    gdb,');
+  lines.push('    fc_name,');
+  lines.push('    geometry_type,');
+  lines.push('    spatial_reference=spatial_reference');
+  lines.push(')[0]');
+  lines.push('');
+  lines.push('# Define fields: (name, type, alias, length, domain)');
+  lines.push('fields = [');
+
+  const enumDomainComments = [];
+
+  attrs.forEach(attr => {
+    const fieldInfo = mapAttributeToArcGisField(attr);
+
+    const name = attr.id || '';
+    const alias = attr.label || '';
+    const type = fieldInfo.type;
+    const length = fieldInfo.length;
+    const domain = 'None'; // placeholder, no auto-domain creation
+
+    lines.push(
+      `    ("${name}", "${type}", "${alias.replace(/"/g, '\\"')}", ${length}, ${domain}),`
+    );
+
+    if (attr.type === 'enumerated' && Array.isArray(attr.values) && attr.values.length) {
+      const linesForAttr = [];
+      linesForAttr.push(`# Domain suggestion for ${name} (${alias}):`);
+      attr.values.forEach(v => {
+        const code = v.code !== undefined ? String(v.code) : '';
+        const label = v.label || '';
+        const desc = v.description || '';
+        linesForAttr.push(`#   ${code} = ${label}  -  ${desc}`);
+      });
+      enumDomainComments.push(linesForAttr.join('\\n'));
+    }
+  });
+
+  lines.push(']');
+  lines.push('');
+  lines.push('# Add fields to the feature class');
+  lines.push('for name, ftype, alias, length, domain in fields:');
+  lines.push('    kwargs = {"field_alias": alias}');
+  lines.push('    if length is not None and ftype == "TEXT":');
+  lines.push('        kwargs["field_length"] = length');
+  lines.push('    if domain is not None and domain != "None":');
+  lines.push('        kwargs["field_domain"] = domain');
+  lines.push('    arcpy.management.AddField(out_fc, name, ftype, **kwargs)');
+  lines.push('');
+  if (enumDomainComments.length) {
+    lines.push('# ---------------------------------------------------------------------------');
+    lines.push('# Suggested coded value domains for enumerated fields');
+    lines.push('# You can use these comments to create geodatabase domains manually:');
+    lines.push('# ---------------------------------------------------------------------------');
+    enumDomainComments.forEach(block => {
+      lines.push(block);
+      lines.push('');
+    });
+  }
+
+  return lines.join('\\n');
+}
+
+function mapAttributeToArcGisField(attr) {
+  const t = (attr.type || '').toLowerCase();
+  switch (t) {
+    case 'string':
+      return { type: 'TEXT', length: 255 };
+    case 'integer':
+      return { type: 'LONG', length: null };
+    case 'float':
+      return { type: 'DOUBLE', length: null };
+    case 'boolean':
+      // Represent booleans as SHORT (0/1) by default
+      return { type: 'SHORT', length: null };
+    case 'date':
+      return { type: 'DATE', length: null };
+    case 'enumerated':
+      // Use LONG so it can be tied to a coded value domain later
+      return { type: 'LONG', length: null };
+    default:
+      // Fallback to TEXT if unknown
+      return { type: 'TEXT', length: 255 };
+  }
+}
+
+function downloadTextFile(content, filename) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+
