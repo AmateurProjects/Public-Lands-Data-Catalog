@@ -276,6 +276,11 @@ input[type="search"]:focus {
   font-weight: 600;
 }
 
+#inlineAttributeDetail h4 {
+  margin: 0.35rem 0 0.45rem;
+  font-size: 0.98rem;
+}
+
 /* ============================
    BREADCRUMB
    ============================ */
