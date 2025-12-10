@@ -463,3 +463,30 @@ code {
   margin: 0.6rem 0 0.3rem;
   font-size: 0.95rem;
 }
+
+/* ============================
+   TOPIC / KEYWORD PILLS
+   ============================ */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  margin-left: 0.35rem;
+  margin-bottom: 0.15rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.pill-topic {
+  border-color: #3fae6a; /* soft green */
+  box-shadow: 0 0 0 1px rgba(63, 174, 106, 0.35);
+}
+
+.pill-keyword {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(78, 163, 255, 0.35);
+}
