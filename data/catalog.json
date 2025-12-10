@@ -212,7 +212,6 @@
       ]
     },
 
-    /* --- New attributes for Wilderness Study Areas --- */
     {
       "id": "WSA_ID",
       "label": "WSA Identifier",
@@ -255,7 +254,6 @@
       ]
     },
 
-    /* --- New attributes for Oil and Gas Leases --- */
     {
       "id": "LEASE_ID",
       "label": "Lease Identifier",
