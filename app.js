@@ -198,18 +198,18 @@ const btn = document.createElement('button');
 btn.type = 'button';
 btn.className = 'list-item-button';
 
-// Geometry icon
-const geom = (ds.geometry_type || '').toUpperCase();
-let geomIcon = '';
-if (geom === 'POINT' || geom === 'MULTIPOINT') {
-  geomIcon = '●';
-} else if (geom === 'POLYLINE' || geom === 'LINE') {
-  geomIcon = '⟶';
-} else if (geom === 'POLYGON') {
-  geomIcon = '⬛';
-} else if (geom === 'TABLE') {
-  geomIcon = '☰';
-}
+const geomIconHtml = getGeometryIconHTML(ds.geometry_type || '', 'geom-icon-list');
+
+btn.innerHTML = `
+  ${geomIconHtml}
+  <span class="list-item-label">${escapeHtml(ds.title || ds.id)}</span>
+`;
+
+btn.addEventListener('click', () => {
+  showDatasetsView();
+  renderDatasetDetail(ds.id);
+});
+
 
 // Use innerHTML so we can show icon + label
 btn.innerHTML = `
@@ -304,6 +304,8 @@ btn.addEventListener('click', () => {
       return;
     }
 
+    const geomIconHtml = getGeometryIconHTML(dataset.geometry_type || '', 'geom-icon-inline');
+
     const geom = (dataset.geometry_type || '').toUpperCase();
 let geomIcon = '';
 if (geom === 'POINT' || geom === 'MULTIPOINT') {
@@ -340,7 +342,7 @@ if (geom === 'POINT' || geom === 'MULTIPOINT') {
     // Meta section
     html += '<div class="card card-meta">';
     html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
-    html += `<p><strong>Geometry Type:</strong> <span class="geom-icon geom-icon-inline">${geomIcon}</span>${escapeHtml(dataset.geometry_type || '')}</p>`;
+    html += `<p><strong>Geometry Type:</strong> ${geomIconHtml}${escapeHtml(dataset.geometry_type || '')}</p>`;
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
 
@@ -714,6 +716,40 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+
+// Return HTML snippet for a geometry icon based on geometry_type
+// contextClass should be either "geom-icon-list" or "geom-icon-inline"
+function getGeometryIconHTML(geometryType, contextClass) {
+  const geom = (geometryType || '').toUpperCase().trim();
+
+  // Base class for all icons
+  const baseClass = 'geom-icon';
+  const fullClass = `${baseClass} ${contextClass || ''}`.trim();
+
+  // Polygon: use CSS-masked filled trapezoid
+  if (geom === 'POLYGON') {
+    return `<span class="${fullClass} geom-poly"></span>`;
+  }
+
+  // Other types use Unicode glyphs wrapped in a span
+  let symbol = '';
+  if (geom === 'POINT' || geom === 'MULTIPOINT') {
+    symbol = '•';        // filled dot
+  } else if (geom === 'POLYLINE' || geom === 'LINE') {
+    symbol = '〰️';      // wavy line
+  } else if (geom === 'TABLE') {
+    symbol = '▦';        // table/grid
+  } else {
+    symbol = '';         // unknown / no icon
+  }
+
+  return `<span class="${fullClass}">${symbol}</span>`;
+}
+
+
+
+
 
 // Build ArcGIS Python schema script for a dataset
 function buildArcGisSchemaPython(dataset, attrs) {
