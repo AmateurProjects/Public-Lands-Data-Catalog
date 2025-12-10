@@ -193,34 +193,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     filtered.forEach(ds => {
       const li = document.createElement('li');
       li.className = 'list-item dataset-item';
-     
-const btn = document.createElement('button');
-btn.type = 'button';
-btn.className = 'list-item-button';
 
-const geomIconHtml = getGeometryIconHTML(ds.geometry_type || '', 'geom-icon-list');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-item-button';
 
-btn.innerHTML = `
-  ${geomIconHtml}
-  <span class="list-item-label">${escapeHtml(ds.title || ds.id)}</span>
-`;
+      const geomIconHtml = getGeometryIconHTML(ds.geometry_type || '', 'geom-icon-list');
 
-btn.addEventListener('click', () => {
-  showDatasetsView();
-  renderDatasetDetail(ds.id);
-});
+      btn.innerHTML = `
+        ${geomIconHtml}
+        <span class="list-item-label">${escapeHtml(ds.title || ds.id)}</span>
+      `;
 
-
-// Use innerHTML so we can show icon + label
-btn.innerHTML = `
-  <span class="geom-icon geom-icon-list">${geomIcon}</span>
-  <span class="list-item-label">${escapeHtml(ds.title || ds.id)}</span>
-`;
-
-btn.addEventListener('click', () => {
-  showDatasetsView();
-  renderDatasetDetail(ds.id);
-});
+      btn.addEventListener('click', () => {
+        showDatasetsView();
+        renderDatasetDetail(ds.id);
+      });
 
       li.appendChild(btn);
       list.appendChild(li);
@@ -305,21 +293,6 @@ btn.addEventListener('click', () => {
     }
 
     const geomIconHtml = getGeometryIconHTML(dataset.geometry_type || '', 'geom-icon-inline');
-
-    const geom = (dataset.geometry_type || '').toUpperCase();
-let geomIcon = '';
-if (geom === 'POINT' || geom === 'MULTIPOINT') {
-  geomIcon = '●';
-} else if (geom === 'POLYLINE' || geom === 'LINE') {
-  geomIcon = '⟶';
-} else if (geom === 'POLYGON') {
-  geomIcon = '⬛';
-} else if (geom === 'TABLE') {
-  geomIcon = '☰';
-}
-
-    
-
     const attrs = Catalog.getAttributesForDataset(dataset);
 
     let html = '';
@@ -385,38 +358,36 @@ if (geom === 'POINT' || geom === 'MULTIPOINT') {
     }
     html += '</div>';
 
-
-// Attributes + inline attribute details in a row
-html += `
-  <div class="card-row">
-    <div class="card card-attributes">
-      <h3>Attributes</h3>
-`;
-
-if (!attrs.length) {
-  html += '<p>No attributes defined for this dataset.</p>';
-} else {
-  html += '<ul>';
-  attrs.forEach(attr => {
+    // Attributes + inline attribute details in a row
     html += `
-      <li>
-        <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
-          ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
-        </button>
-      </li>`;
-  });
-  html += '</ul>';
-}
+      <div class="card-row">
+        <div class="card card-attributes">
+          <h3>Attributes</h3>
+    `;
 
-html += `
-    </div>
-    <div class="card card-inline-attribute" id="inlineAttributeDetail">
-      <h3>Attribute details</h3>
-      <p>Select an attribute from the list to see its properties here without leaving this dataset.</p>
-    </div>
-  </div>
-`;
+    if (!attrs.length) {
+      html += '<p>No attributes defined for this dataset.</p>';
+    } else {
+      html += '<ul>';
+      attrs.forEach(attr => {
+        html += `
+          <li>
+            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+            </button>
+          </li>`;
+      });
+      html += '</ul>';
+    }
 
+    html += `
+        </div>
+        <div class="card card-inline-attribute" id="inlineAttributeDetail">
+          <h3>Attribute details</h3>
+          <p>Select an attribute from the list to see its properties here without leaving this dataset.</p>
+        </div>
+      </div>
+    `;
 
     // Suggest change + export schema buttons (dataset)
     const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
@@ -592,9 +563,7 @@ html += `
       </nav>
     `;
 
-
     // Meta section
-    
     html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
     html += '<div class="card card-attribute-meta">';
     html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
@@ -717,7 +686,6 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-
 // Return HTML snippet for a geometry icon based on geometry_type
 // contextClass should be either "geom-icon-list" or "geom-icon-inline"
 function getGeometryIconHTML(geometryType, contextClass) {
@@ -747,10 +715,6 @@ function getGeometryIconHTML(geometryType, contextClass) {
   return `<span class="${fullClass}">${symbol}</span>`;
 }
 
-
-
-
-
 // Build ArcGIS Python schema script for a dataset
 function buildArcGisSchemaPython(dataset, attrs) {
   const lines = [];
@@ -772,7 +736,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
   lines.push('# TODO: Update these paths and settings before running');
   lines.push('gdb = r"C:\\path\\to\\your.gdb"');
   lines.push(`fc_name = "${objname}"`);
-  
+
   const proj = dataset.projection || '';
   const epsgMatch = proj.match(/EPSG:(\d+)/i);
 
@@ -786,7 +750,6 @@ function buildArcGisSchemaPython(dataset, attrs) {
   } else {
     lines.push('spatial_reference = None  # TODO: set a spatial reference if desired');
   }
-
 
   lines.push('');
   lines.push('# Create the feature class');
