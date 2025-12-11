@@ -14,6 +14,9 @@
   --accent-hover: #77bdff;        /* Accent hover */
   --radius: 6px;
   --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.45);
+
+  /* Purple geometry color to match line emoji */
+  --geom-purple: #c275ff;
 }
 
 *,
@@ -218,25 +221,22 @@ input[type="search"]:focus {
 
 .detail-panel {
   flex: 1;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.25rem; /* aligns with header padding */
   overflow-y: auto;
   background: radial-gradient(circle at top left, #1a1a1a 0, #101010 45%, #090909 100%);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  align-items: flex-start;   /* left-align children in the flex row */
+  text-align: left;          /* default text alignment */
 }
 
-.detail-panel-inner {
-  max-width: 980px;
-  margin: 0 auto;
-}
-
-/* Make sure everything we render sits in a centered column.
-   If you want, you can wrap content manually; for now we target children. */
+/* Children stay constrained in width but hug the left side */
 .detail-panel > * {
   max-width: 980px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .detail-panel h2 {
@@ -265,15 +265,6 @@ input[type="search"]:focus {
 
 .detail-panel li {
   margin-bottom: 0.2rem;
-}
-
-/* Ensure cards and detail content are left-aligned for readability */
-.detail-panel {
-  text-align: left;
-}
-
-.detail-panel .card {
-  text-align: left;
 }
 
 /* ============================
@@ -524,33 +515,28 @@ code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.9rem;
+  margin-right: 0.35rem;
   width: 1.1rem;
   height: 1.1rem;
-  margin-right: 0.35rem;
-  font-size: 0.9rem;
-  color: #5fb3ff;
+  color: var(--geom-purple); /* POINT / TABLE / LINE get this */
 }
 
-/* Context helpers (if you want slight spacing tweaks) */
+/* Slight extra spacing in list context */
 .geom-icon-list {
+  width: 1.3rem;
   margin-right: 0.4rem;
 }
 
-/* Context helpers (if you want slight spacing tweaks) */
-.geom-icon-list {
-  margin-right: 0.4rem;
+.geom-icon-inline {
+  width: 1.1rem;
 }
 
-/* Filled polygon icon uses background instead of text color */
+/* Polygon icon: filled trapezoid using SVG mask, in SAME purple */
 .geom-icon.geom-poly {
-  background-color: #5fb3ff;
-}
-
-/* Polygon icon: filled trapezoid using SVG mask */
-.geom-poly {
   width: 1.2em;
   height: 0.85em;
-  background: var(--accent-hover);
+  background-color: var(--geom-purple);
 
   /* Standard mask */
   mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><polygon points="10,70 90,70 70,10 30,10"/></svg>');
